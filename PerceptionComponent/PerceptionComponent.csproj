@@ -16,6 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="PresentationCore">
+      <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\v3.0\PresentationCore.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Assets\Images\cars road.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -6,6 +6,7 @@ using System.Threading;
 using YOLOv4MLNet.DataStructures;
 using static Microsoft.ML.Transforms.Image.ImageResizingEstimator;
 using System;
+using System.IO;
 
 namespace YOLOv4MLNet
 {
@@ -57,10 +58,11 @@ namespace YOLOv4MLNet
             var model = pipeline.Fit(mlContext.Data.LoadFromEnumerable(new List<YoloV4BitmapData>()));
             predictionEngine = mlContext.Model.CreatePredictionEngine<YoloV4BitmapData, YoloV4Prediction>(model);
         }
-        public async Task<bool> StartPerception(Model viewmodel, string pathToImage, CancellationToken ct)
+        public async Task StartPerception(Model viewmodel, string pathToImage, CancellationToken ct)
         {
-                return await Task<bool>.Factory.StartNew(() =>
+                await Task.Factory.StartNew(() =>
                 {
+                    viewmodel.AddImage(pathToImage);
                     using (var bitmap = new Bitmap(Image.FromFile(pathToImage)))
                     {
                         YOLOv4MLNet.DataStructures.YoloV4Prediction predict;
@@ -76,17 +78,33 @@ namespace YOLOv4MLNet
                             var y1 = res.BBox[1];
                             var x2 = res.BBox[2];
                             var y2 = res.BBox[3];
+                            using (var g = Graphics.FromImage(bitmap))
+                            {
+                                g.DrawRectangle(Pens.Red, x1, y1, x2 - x1, y2 - y1);
+                                using (var brushes = new SolidBrush(Color.FromArgb(50, Color.Red)))
+                                {
+                                    g.FillRectangle(brushes, x1, y1, x2 - x1, y2 - y1);
+                                }
+                                g.DrawString(res.Label + " " + res.Confidence.ToString("0.00"),
+                                                     new Font("Arial", 12), Brushes.Blue, new PointF(x1, y1));
+                            }
                             ObjDescription objDesc = new ObjDescription(x1, y1, y2 - y1, x2 - x1, res.Label);
                             imgDesc.Add(objDesc);
                         }
-                        if (ct.IsCancellationRequested)
+                        FileInfo fi = new FileInfo(pathToImage);
+                        bitmap.Save(fi.DirectoryName + "\\Output" + fi.Name + "Result" + fi.Extension);
+                        lock (pathToImage)
                         {
-                            return false;
+                            int ind = viewmodel.ImagesInProcess.IndexOf(pathToImage);
+                            viewmodel.InsertImage(ind, fi.DirectoryName + "\\Output" + fi.Name + "Result" + fi.Extension);
+                            viewmodel.RemoveImage(ind + 1);
                         }
-                        viewmodel.Add(imgDesc);
+                        if (ct.IsCancellationRequested == false)
+                        {
+                            viewmodel.Add(imgDesc, pathToImage);
+                        }
                     }
-                    return true;
-                });
+                }, ct);
         }
         public string ModelPath
         {
