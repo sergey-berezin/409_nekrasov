@@ -93,7 +93,7 @@ namespace YOLOv4MLNet
                         }
                         FileInfo fi = new FileInfo(pathToImage);
                         bitmap.Save(fi.DirectoryName + "\\Output" + fi.Name + "Result" + fi.Extension);
-                        lock (pathToImage)
+                        lock (viewmodel.ImagesInProcess)
                         {
                             int ind = viewmodel.ImagesInProcess.IndexOf(pathToImage);
                             viewmodel.InsertImage(ind, fi.DirectoryName + "\\Output" + fi.Name + "Result" + fi.Extension);
