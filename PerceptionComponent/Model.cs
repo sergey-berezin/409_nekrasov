@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace YOLOv4MLNet
+namespace PerceptionComponent
 {
     public class Model: INotifyPropertyChanged
     {

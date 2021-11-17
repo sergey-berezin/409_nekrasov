@@ -3,11 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:PerceptionGUI" xmlns:perceptioncomponent="clr-namespace:PerceptionComponent;assembly=PerceptionComponent" d:DataContext="{d:DesignInstance Type=perceptioncomponent:WPFView}"
+        xmlns:local="clr-namespace:PerceptionGUI" xmlns:perceptioncomponent="clr-namespace:PerceptionComponent;assembly=PerceptionComponent"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
             <ColumnDefinition Width="1*"/>
             <ColumnDefinition Width="1*"/>
             <ColumnDefinition Width="1*"/>
@@ -57,6 +58,17 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+        </Grid>
+        <Grid Grid.Column="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="8*"/>
+                <RowDefinition Height="8*"/>
+            </Grid.RowDefinitions>
+            <Button Grid.Row="1" Content="Удалить содержимое базы данных" Click="ClearDB"/>
+            <ListBox Grid.Row="2" x:Name="ImagesDBListBox"/>
+            <ListBox Grid.Row="3" x:Name="RectanglesDBListBox"/>
         </Grid>
     </Grid>
 </Window>

@@ -5,10 +5,11 @@ using System.Drawing;
 using System.Threading;
 using YOLOv4MLNet.DataStructures;
 using static Microsoft.ML.Transforms.Image.ImageResizingEstimator;
-using System;
 using System.IO;
+using System.Linq;
+using System.Numerics;
 
-namespace YOLOv4MLNet
+namespace PerceptionComponent
 {
     public class Perception
     {
@@ -72,6 +73,7 @@ namespace YOLOv4MLNet
                         }
                         var results = predict.GetResults(classesNames, 0.3f, 0.7f);
                         ImgDescription imgDesc = new ImgDescription(pathToImage);
+                        ImgDB imgDescDB = new ImgDB(imgDesc);
                         foreach (var res in results)
                         {
                             var x1 = res.BBox[0];
@@ -88,8 +90,51 @@ namespace YOLOv4MLNet
                                 g.DrawString(res.Label + " " + res.Confidence.ToString("0.00"),
                                                      new Font("Arial", 12), Brushes.Blue, new PointF(x1, y1));
                             }
-                            ObjDescription objDesc = new ObjDescription(x1, y1, y2 - y1, x2 - x1, res.Label);
+                            ObjDescription objDesc = new ObjDescription(x1, y1, y2 - y1, x2 - x1, res.Label, imgDescDB);
+                            imgDescDB.descs.Add(objDesc);
                             imgDesc.Add(objDesc);
+                        }
+                        Image image = Image.FromFile(imgDesc.ImgName);
+                        System.IO.MemoryStream memoryStream = new System.IO.MemoryStream();
+                        image.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Jpeg);
+                        imgDescDB.blob = memoryStream.ToArray();
+                        imgDescDB.hash = GetHashFromBytes(imgDescDB.blob);
+                        using (var db = new LibraryContext())
+                        {
+                            var query = db.Images.Where(im => im.hash == imgDescDB.hash);
+                            if (query.Count() == 0)
+                            {
+                                db.Images.Add(imgDescDB);
+                                db.SaveChanges();
+                            } else
+                            {
+                                bool flag = true;
+                                foreach (var q in query)
+                                {
+                                    if (q.blob.Length != imgDescDB.blob.Length)
+                                    {
+                                        continue;
+                                    } else
+                                    {
+                                        for (int i = 0; i < imgDescDB.blob.Length; ++i)
+                                        {
+                                            if (q.blob[i] != imgDescDB.blob[i])
+                                            {
+                                                break;
+                                            }
+                                            if (i == imgDescDB.blob.Length - 1)
+                                            {
+                                                flag = false;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (flag)
+                                {
+                                    db.Images.Add(imgDescDB);
+                                    db.SaveChanges();
+                                }
+                            }
                         }
                         FileInfo fi = new FileInfo(pathToImage);
                         bitmap.Save(fi.DirectoryName + "\\Output" + fi.Name + "Result" + fi.Extension);
@@ -112,6 +157,10 @@ namespace YOLOv4MLNet
             {
                 return modelPath;
             }
+        }
+        private static int GetHashFromBytes(byte[] bytes)
+        {
+            return new BigInteger(bytes).GetHashCode();
         }
     }
 }

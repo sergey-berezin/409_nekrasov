@@ -1,14 +1,19 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 
-namespace YOLOv4MLNet
+namespace PerceptionComponent
 {
     public class ImgDescription
     {
-        string name;
+        string imgName;
         ConcurrentBag<ObjDescription> objs;
-        public ImgDescription(string name)
+        public ImgDescription()
         {
-            this.name = name;
+
+        }
+        public ImgDescription(string imgName)
+        {
+            this.imgName = imgName;
             objs = new ConcurrentBag<ObjDescription>();
         }
         public void Add(ObjDescription obj)
@@ -17,18 +22,29 @@ namespace YOLOv4MLNet
         }
         public override string ToString()
         {
-            string res = name + "\n";
+            string res = imgName + "\n";
             foreach(ObjDescription desc in objs)
             {
                 res += desc.ToString();
             }
             return res;
         }
+        public string ImgName
+        {
+            get
+            {
+                return imgName;
+            }
+        }
         public ConcurrentBag<ObjDescription> Objs
         {
             get
             {
                 return objs;
+            }
+            set
+            {
+                objs = value;
             }
         }
     }

@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Threading;
 using Ookii.Dialogs.Wpf;
 using System.Windows.Controls;
 using PerceptionComponent;
-using YOLOv4MLNet;
 using System.IO;
-using System.Windows.Media.Imaging;
 
 namespace PerceptionGUI
 {
@@ -29,6 +26,13 @@ namespace PerceptionGUI
             cts = new CancellationTokenSource();
             token = cts.Token;
             ClassCounts.SelectionChanged += ClassCountSelectionChanged;
+            using (var db = new LibraryContext())
+            {
+                var query = db.Images.Where(a => true).ToList();
+                ImagesDBListBox.ItemsSource = query;
+                var query2 = db.Rectangles.Where(a => true).ToList();
+                RectanglesDBListBox.ItemsSource = query2;
+            }
         }
         private void ChooseFolderButtonClick(object sender, RoutedEventArgs e)
         {
@@ -66,6 +70,17 @@ namespace PerceptionGUI
             }
             string className = ((KeyValuePair<string, int>)ClassCounts.SelectedItem).Key;
             ClassImages.ItemsSource = view.ClassImages[className];
+        }
+
+        private void ClearDB(object sender, RoutedEventArgs e)
+        {
+            using (var db = new LibraryContext())
+            {
+                db.Rectangles.RemoveRange(db.Rectangles);
+                db.SaveChanges();
+                db.Images.RemoveRange(db.Images);
+                db.SaveChanges();
+            }
         }
     }
 }

@@ -1,7 +1,5 @@
 ﻿using System.Collections.Immutable;
 using System.ComponentModel;
-using System.Drawing;
-using YOLOv4MLNet;
 
 namespace PerceptionComponent
 {
