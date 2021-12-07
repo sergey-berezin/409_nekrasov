@@ -28,9 +28,9 @@ namespace PerceptionGUI
             ClassCounts.SelectionChanged += ClassCountSelectionChanged;
             using (var db = new LibraryContext())
             {
-                var query = db.Images.Where(a => true).ToList();
+                var query = db.Images.ToList();
                 ImagesDBListBox.ItemsSource = query;
-                var query2 = db.Rectangles.Where(a => true).ToList();
+                var query2 = db.Rectangles.ToList();
                 RectanglesDBListBox.ItemsSource = query2;
             }
         }
