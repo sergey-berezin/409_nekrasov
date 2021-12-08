@@ -51,7 +51,7 @@
                 <RowDefinition Height="1*"/>
                 <RowDefinition Height="16*"/>
             </Grid.RowDefinitions>
-            <ListView x:Name="ListViewImagesInProcess" Grid.Row="3" ItemsSource="{Binding ImagesInProcess}">
+            <ListView x:Name="ListViewImagesInProcess" Grid.Row="2" ItemsSource="{Binding ImagesInProcess}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Image Source="{Binding}" Height="100" Width="100"/>
