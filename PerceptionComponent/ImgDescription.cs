@@ -13,7 +13,7 @@ namespace PerceptionComponent
         }
         public ImgDescription(string imgName)
         {
-            this.imgName = imgName;
+            this.ImgName = imgName;
             objs = new ConcurrentBag<ObjDescription>();
         }
         public void Add(ObjDescription obj)
@@ -34,6 +34,10 @@ namespace PerceptionComponent
             get
             {
                 return imgName;
+            }
+            set
+            {
+                imgName = value;
             }
         }
         public ConcurrentBag<ObjDescription> Objs

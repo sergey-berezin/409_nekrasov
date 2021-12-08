@@ -101,6 +101,10 @@ namespace PerceptionComponent
             {
                 return imagesInProcess;
             }
+            set
+            {
+                imagesInProcess = value;
+            }
         }
         public void OnPropertyChanged(string name)
         {

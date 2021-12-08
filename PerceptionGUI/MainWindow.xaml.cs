@@ -8,58 +8,107 @@ using Ookii.Dialogs.Wpf;
 using System.Windows.Controls;
 using PerceptionComponent;
 using System.IO;
+using System.Net.Http;
+using System.Text;
+using Newtonsoft.Json;
+using System.Drawing;
 
 namespace PerceptionGUI
 {
     public partial class MainWindow : Window
     {
         WPFView view;
-        CancellationTokenSource cts;
-        CancellationToken token;
-        Perception perc;
+        HttpClient client;
         public MainWindow()
         {
             InitializeComponent();
             view = new WPFView();
-            perc = new Perception(@"D:\MachineLearning\yolov4.onnx");
-            DataContext = view;
-            cts = new CancellationTokenSource();
-            token = cts.Token;
+            ListViewImagesInProcess.ItemsSource = view.Model.ImagesInProcess;
+            client = new HttpClient();
+            GetStartValuesAsync();
             ClassCounts.SelectionChanged += ClassCountSelectionChanged;
-            using (var db = new LibraryContext())
-            {
-                var query = db.Images.ToList();
-                ImagesDBListBox.ItemsSource = query;
-                var query2 = db.Rectangles.ToList();
-                RectanglesDBListBox.ItemsSource = query2;
-            }
+        }
+        private async void GetStartValuesAsync()
+        {
+            string response;
+            //try
+            //{
+                response = await client.GetStringAsync("https://localhost:44319/api/images");
+                var res = JsonConvert.DeserializeObject<List<ImgDescription>>(response);
+                ListViewImagesInProcess.ItemsSource = view.ImagesInProcess;
+                ImagesDBListBox.ItemsSource = res;
+                for (int i = 0; i < res.Count; ++i)
+                {
+                    view.Model.Add(res[i], res[i].ImgName);
+                }
+                DataContext = view;
+            //} catch
+            //{
+            //    MessageBox.Show("Сервис недоступен");
+            //}
         }
         private void ChooseFolderButtonClick(object sender, RoutedEventArgs e)
         {
-            VistaFolderBrowserDialog dial = new VistaFolderBrowserDialog();
+            VistaOpenFileDialog dial = new VistaOpenFileDialog();
             bool? res = dial.ShowDialog();
             if (res.HasValue && res.Value)
             {
-                FolderPathTextBox.Text = dial.SelectedPath;
+                FolderPathTextBox.Text = dial.FileName;
             }
         }
         private async void StartPerceptionButtonClick(object sender, RoutedEventArgs e)
         {
-            StopPerceptionButton.IsEnabled = true;
-            DirectoryInfo di = new DirectoryInfo(FolderPathTextBox.Text);
-            IEnumerable<FileInfo> fi = new List<FileInfo>(di.GetFiles());
-            var tasks = fi.Select(flinf => perc.StartPerception(view.Model, flinf.FullName, token));
-            await Task.WhenAll(tasks).ContinueWith(_ =>
-            {
-                this.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    StopPerceptionButton.IsEnabled = false;
-                }));
-            });
+            //try
+            //{
+                System.Drawing.Image image = System.Drawing.Image.FromFile(FolderPathTextBox.Text);
+                System.IO.MemoryStream memoryStream = new System.IO.MemoryStream();
+                image.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Jpeg);
+                MultipartFormDataContent content = new MultipartFormDataContent();
+                content.Add(new StreamContent(memoryStream), "file", FolderPathTextBox.Text);
+                await client.PostAsync("https://localhost:44319/api/images", content);
+            //} catch
+            //{
+            //    MessageBox.Show("Сервис недоступен");
+            //}
         }
-        private void StopPerceptionButtonClick(object sender, RoutedEventArgs e)
+        private async void RefreshDataButtonClick(object sender, RoutedEventArgs e)
         {
-            cts.Cancel();
+            //try
+            //{
+                var response = await client.GetStringAsync("https://localhost:44319/api/images");
+                var res = JsonConvert.DeserializeObject<List<ImgDescription>>(response);
+                ImagesDBListBox.ItemsSource = res;
+                WPFView newView = new WPFView();
+                for (int i = 0; i < res.Count; ++i)
+                {
+                    if (!view.Model.ImagesInProcess.Contains(res[i].ImgName))
+                    {
+                        view.Model.Add(res[i], res[i].ImgName);
+                        using (var bitmap = new Bitmap(System.Drawing.Image.FromFile(res[i].ImgName)))
+                        {
+                        foreach (var obj in res[i].Objs)
+                            {
+                                using (var g = Graphics.FromImage(bitmap))
+                                {
+                                    g.DrawRectangle(Pens.Red, (int)obj.x, (int)obj.y, (int)obj.width, (int)obj.height);
+                                    using (var brushes = new SolidBrush(Color.FromArgb(50, Color.Red)))
+                                    {
+                                        g.FillRectangle(brushes, (int)obj.x, (int)obj.y, (int)obj.width, (int)obj.height);
+                                    }
+                                    g.DrawString(obj.Cls, new Font("Arial", 12), Brushes.Blue, new PointF((int)obj.x, (int)obj.y));
+                                }
+                            }
+                            bitmap.Save(res[i].ImgName + "Result" + ".jpg");
+                            view.Model.InsertImage(0, res[i].ImgName);
+                        }
+                    }
+                }
+                //view = newView;
+                DataContext = view;
+            //} catch
+            //{
+            //    MessageBox.Show("Сервис недоступен");
+            //}
         }
         private void ClassCountSelectionChanged(object sender, SelectionChangedEventArgs args)
         {
@@ -72,14 +121,14 @@ namespace PerceptionGUI
             ClassImages.ItemsSource = view.ClassImages[className];
         }
 
-        private void ClearDB(object sender, RoutedEventArgs e)
+        private async void ClearDB(object sender, RoutedEventArgs e)
         {
-            using (var db = new LibraryContext())
+            try
             {
-                db.Rectangles.RemoveRange(db.Rectangles);
-                db.SaveChanges();
-                db.Images.RemoveRange(db.Images);
-                db.SaveChanges();
+                await client.DeleteAsync("https://localhost:44319/api/images");
+            } catch
+            {
+                MessageBox.Show("Сервис недоступен");
             }
         }
     }

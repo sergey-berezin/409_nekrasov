@@ -29,6 +29,14 @@ namespace PerceptionComponent
             this.Cls = cls;
             this.image = image;
         }
+        public ObjDescription(double x, double y, double height, double width, string cls)
+        {
+            this.x = x;
+            this.y = y;
+            this.height = height;
+            this.width = width;
+            this.Cls = cls;
+        }
         public override string ToString()
         {
             return "Class: " + Cls + ".\nBottom left point coordinates: ("

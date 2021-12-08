@@ -8,6 +8,7 @@ using static Microsoft.ML.Transforms.Image.ImageResizingEstimator;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using Microsoft.AspNetCore.Http;
 
 namespace PerceptionComponent
 {
@@ -59,12 +60,12 @@ namespace PerceptionComponent
             var model = pipeline.Fit(mlContext.Data.LoadFromEnumerable(new List<YoloV4BitmapData>()));
             predictionEngine = mlContext.Model.CreatePredictionEngine<YoloV4BitmapData, YoloV4Prediction>(model);
         }
-        public async Task StartPerception(Model viewmodel, string pathToImage, CancellationToken ct)
+        public async Task<ImgDescription> StartPerception(IFormFile fl)
         {
-                await Task.Factory.StartNew(() =>
+                return await Task.Factory.StartNew(() =>
                 {
-                    viewmodel.AddImage(pathToImage);
-                    using (var bitmap = new Bitmap(Image.FromFile(pathToImage)))
+                    ImgDescription imgDesc = new ImgDescription(fl.FileName);
+                    using (var bitmap = new Bitmap(Image.FromStream(fl.OpenReadStream())))
                     {
                         YOLOv4MLNet.DataStructures.YoloV4Prediction predict;
                         lock(predictionEngine)
@@ -72,84 +73,18 @@ namespace PerceptionComponent
                             predict = predictionEngine.Predict(new YoloV4BitmapData() { Image = bitmap });
                         }
                         var results = predict.GetResults(classesNames, 0.3f, 0.7f);
-                        ImgDescription imgDesc = new ImgDescription(pathToImage);
-                        ImgDB imgDescDB = new ImgDB(imgDesc);
                         foreach (var res in results)
                         {
                             var x1 = res.BBox[0];
                             var y1 = res.BBox[1];
                             var x2 = res.BBox[2];
                             var y2 = res.BBox[3];
-                            using (var g = Graphics.FromImage(bitmap))
-                            {
-                                g.DrawRectangle(Pens.Red, x1, y1, x2 - x1, y2 - y1);
-                                using (var brushes = new SolidBrush(Color.FromArgb(50, Color.Red)))
-                                {
-                                    g.FillRectangle(brushes, x1, y1, x2 - x1, y2 - y1);
-                                }
-                                g.DrawString(res.Label + " " + res.Confidence.ToString("0.00"),
-                                                     new Font("Arial", 12), Brushes.Blue, new PointF(x1, y1));
-                            }
-                            ObjDescription objDesc = new ObjDescription(x1, y1, y2 - y1, x2 - x1, res.Label, imgDescDB);
-                            imgDescDB.descs.Add(objDesc);
+                            ObjDescription objDesc = new ObjDescription(x1, y1, y2 - y1, x2 - x1, res.Label);
                             imgDesc.Add(objDesc);
                         }
-                        Image image = Image.FromFile(imgDesc.ImgName);
-                        System.IO.MemoryStream memoryStream = new System.IO.MemoryStream();
-                        image.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Jpeg);
-                        imgDescDB.blob = memoryStream.ToArray();
-                        imgDescDB.hash = GetHashFromBytes(imgDescDB.blob);
-                        using (var db = new LibraryContext())
-                        {
-                            var query = db.Images.Where(im => im.hash == imgDescDB.hash);
-                            if (query.Count() == 0)
-                            {
-                                db.Images.Add(imgDescDB);
-                                db.SaveChanges();
-                            } else
-                            {
-                                bool flag = true;
-                                foreach (var q in query)
-                                {
-                                    if (q.blob.Length != imgDescDB.blob.Length)
-                                    {
-                                        continue;
-                                    } else
-                                    {
-                                        for (int i = 0; i < imgDescDB.blob.Length; ++i)
-                                        {
-                                            if (q.blob[i] != imgDescDB.blob[i])
-                                            {
-                                                break;
-                                            }
-                                            if (i == imgDescDB.blob.Length - 1)
-                                            {
-                                                flag = false;
-                                            }
-                                        }
-                                    }
-                                }
-                                if (flag)
-                                {
-                                    db.Images.Add(imgDescDB);
-                                    db.SaveChanges();
-                                }
-                            }
-                        }
-                        FileInfo fi = new FileInfo(pathToImage);
-                        bitmap.Save(fi.DirectoryName + "\\Output" + fi.Name + "Result" + fi.Extension);
-                        lock (viewmodel.ImagesInProcess)
-                        {
-                            int ind = viewmodel.ImagesInProcess.IndexOf(pathToImage);
-                            viewmodel.InsertImage(ind, fi.DirectoryName + "\\Output" + fi.Name + "Result" + fi.Extension);
-                            viewmodel.RemoveImage(ind + 1);
-                        }
-                        if (ct.IsCancellationRequested == false)
-                        {
-                            viewmodel.Add(imgDesc, pathToImage);
-                        }
                     }
-                }, ct);
+                    return imgDesc;
+                });
         }
         public string ModelPath
         {

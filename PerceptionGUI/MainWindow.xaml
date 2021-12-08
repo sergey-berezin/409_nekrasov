@@ -30,7 +30,7 @@
                 <Button Grid.Column="1" Content="Обзор" Click="ChooseFolderButtonClick"/>
             </Grid>
             <Button Grid.Row="2" Content="Начать распознавание" Click="StartPerceptionButtonClick"/>
-            <Button x:Name="StopPerceptionButton" Grid.Row="3" Content="Остановить распознавание" IsEnabled="False" Click="StopPerceptionButtonClick"/>
+            <Button Grid.Row="3" Content="Проверить готовность результатов" Click="RefreshDataButtonClick"/>
             <ListBox x:Name="ClassCounts" Grid.Row="4" ItemsSource="{Binding ClassCount}"/>
         </Grid>
         <Grid Grid.Column="1">
@@ -51,7 +51,7 @@
                 <RowDefinition Height="1*"/>
                 <RowDefinition Height="16*"/>
             </Grid.RowDefinitions>
-            <ListView x:Name="ListViewImagesInProcess" Grid.Row="2" ItemsSource="{Binding ImagesInProcess}">
+            <ListView x:Name="ListViewImagesInProcess" Grid.Row="3" ItemsSource="{Binding ImagesInProcess}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Image Source="{Binding}" Height="100" Width="100"/>
