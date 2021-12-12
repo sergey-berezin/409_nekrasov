@@ -60,9 +60,7 @@ namespace PerceptionGUI
         {
             try
             {
-                System.Drawing.Image image = System.Drawing.Image.FromFile(FolderPathTextBox.Text);
-                System.IO.MemoryStream memoryStream = new System.IO.MemoryStream();
-                image.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Jpeg);
+                FileStream memoryStream = File.OpenRead(FolderPathTextBox.Text);
                 MultipartFormDataContent content = new MultipartFormDataContent();
                 content.Add(new StreamContent(memoryStream), "file", FolderPathTextBox.Text);
                 await client.PostAsync("https://localhost:44319/api/images", content);
