@@ -38,6 +38,7 @@
                     }
                 }
             }
+            document.getElementById('pic').src = "file:\\" + (images[0])[curNum]
             list.onchange = function () {
                 document.getElementById('pic').src = "file:\\" + (images[list.selectedIndex])[curNum]
             }
