@@ -5,9 +5,12 @@ using System.Drawing;
 using System.Threading;
 using YOLOv4MLNet.DataStructures;
 using static Microsoft.ML.Transforms.Image.ImageResizingEstimator;
-using System;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using Microsoft.AspNetCore.Http;
 
-namespace YOLOv4MLNet
+namespace PerceptionComponent
 {
     public class Perception
     {
@@ -57,11 +60,12 @@ namespace YOLOv4MLNet
             var model = pipeline.Fit(mlContext.Data.LoadFromEnumerable(new List<YoloV4BitmapData>()));
             predictionEngine = mlContext.Model.CreatePredictionEngine<YoloV4BitmapData, YoloV4Prediction>(model);
         }
-        public async Task<bool> StartPerception(Model viewmodel, string pathToImage, CancellationToken ct)
+        public async Task<ImgDescription> StartPerception(IFormFile fl)
         {
-                return await Task<bool>.Factory.StartNew(() =>
+                return await Task.Factory.StartNew(() =>
                 {
-                    using (var bitmap = new Bitmap(Image.FromFile(pathToImage)))
+                    ImgDescription imgDesc = new ImgDescription(fl.FileName);
+                    using (var bitmap = new Bitmap(Image.FromStream(fl.OpenReadStream())))
                     {
                         YOLOv4MLNet.DataStructures.YoloV4Prediction predict;
                         lock(predictionEngine)
@@ -69,7 +73,6 @@ namespace YOLOv4MLNet
                             predict = predictionEngine.Predict(new YoloV4BitmapData() { Image = bitmap });
                         }
                         var results = predict.GetResults(classesNames, 0.3f, 0.7f);
-                        ImgDescription imgDesc = new ImgDescription(pathToImage);
                         foreach (var res in results)
                         {
                             var x1 = res.BBox[0];
@@ -79,13 +82,8 @@ namespace YOLOv4MLNet
                             ObjDescription objDesc = new ObjDescription(x1, y1, y2 - y1, x2 - x1, res.Label);
                             imgDesc.Add(objDesc);
                         }
-                        if (ct.IsCancellationRequested)
-                        {
-                            return false;
-                        }
-                        viewmodel.Add(imgDesc);
                     }
-                    return true;
+                    return imgDesc;
                 });
         }
         public string ModelPath
@@ -94,6 +92,10 @@ namespace YOLOv4MLNet
             {
                 return modelPath;
             }
+        }
+        private static int GetHashFromBytes(byte[] bytes)
+        {
+            return new BigInteger(bytes).GetHashCode();
         }
     }
 }
