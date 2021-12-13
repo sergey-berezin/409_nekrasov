@@ -17,6 +17,7 @@ namespace ASPApp
         {
             services.AddControllers();
             services.AddSingleton<ILibraryDB>(new InMemoryLibrary());
+            services.AddCors();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -25,7 +26,9 @@ namespace ASPApp
             {
                 app.UseDeveloperExceptionPage();
             }
+            
             app.UseRouting();
+            app.UseCors(builder => builder.AllowAnyOrigin());
 
 
             app.UseEndpoints(endpoints =>

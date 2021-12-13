@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using PerceptionComponent;
 using System.IO;
+using Microsoft.AspNetCore.Cors;
 
 namespace ASPApp
 {
@@ -20,10 +21,13 @@ namespace ASPApp
         {
             this.db = db;
         }
+        [EnableCors]
+        [HttpGet]
         public List<ImgDescription> GetImages()
         {
             return db.GetImages();
         }
+        [EnableCors]
         [HttpPost]
         public void AddImage([FromForm]IFormFile file)
         {
@@ -36,7 +40,7 @@ namespace ASPApp
             }
             //db.AddImage(image);
         }
-        [HttpGet("{name}")]
+        [EnableCors]
         public ImgDescription GetImage(string name)
         {
             return db.GetImage(name);
