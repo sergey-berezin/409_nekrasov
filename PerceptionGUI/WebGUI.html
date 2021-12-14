@@ -8,6 +8,7 @@
 <body>
     <select id="selecter">
     </select>
+    <p id="par"></p>
     <img id="pic" width="100" height="100">
     <button type="button" id="getPrev">Получить предыдующую картинку</button>
     <button type="button" id="getNext">Получить следующую картинку</button>
@@ -39,8 +40,11 @@
                 }
             }
             document.getElementById('pic').src = "file:\\" + (images[0])[curNum]
+            document.getElementById('par').innerHTML = "Picture 1 of " + images[0].length
             list.onchange = function () {
+                curNum = 0
                 document.getElementById('pic').src = "file:\\" + (images[list.selectedIndex])[curNum]
+                document.getElementById('par').innerHTML = "Picture 1 of " + images[list.selectedIndex].length
             }
             document.getElementById('getNext').onclick = function () {
                 var ind = list.selectedIndex
@@ -48,6 +52,7 @@
                 if (curNum >= images[ind].length) {
                     curNum = 0;
                 }
+                document.getElementById('par').innerHTML = "Picture " + (curNum + 1) + " of " + images[ind].length
                 document.getElementById('pic').src = "file:\\" + (images[list.selectedIndex])[curNum]
             }
             document.getElementById('getPrev').onclick = function () {
@@ -56,6 +61,7 @@
                 if (curNum < 0) {
                     curNum = images[ind].length - 1;
                 }
+                document.getElementById('par').innerHTML = "Picture " + (curNum + 1) + " of " + images[ind].length
                 document.getElementById('pic').src = "file:\\" + (images[list.selectedIndex])[curNum]
             }
         }
