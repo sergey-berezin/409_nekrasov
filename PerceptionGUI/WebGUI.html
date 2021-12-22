@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>TEST</title>
+</head>
+<body>
+    <select id="selecter">
+    </select>
+    <p id="par"></p>
+    <img id="pic" width="100" height="100">
+    <button type="button" id="getPrev">Получить предыдующую картинку</button>
+    <button type="button" id="getNext">Получить следующую картинку</button>
+    <script type="text/javascript">
+        let t = new XMLHttpRequest()
+        t.open('GET', 'https://localhost:44319/api/images')
+        t.onload = function () {
+            var curNum = 0
+            var images = []
+            var optionsCount = 0
+            var res = t.response;
+            var arr = JSON.parse(t.responseText)
+            var classes = [];
+            var list = document.getElementById('selecter');
+            for (var i = 0; i < arr.length; i++) {
+                var objs = arr[i].objs
+                for (var j = 0; j < objs.length; j++) {
+                    if (classes.indexOf(objs[j].cls) == -1) {
+                        classes.push(objs[j].cls)
+                        list.options[optionsCount] = new Option(objs[j].cls)
+                        optionsCount = optionsCount + 1
+                        var q = []
+                        q.push(arr[i].imgName)
+                        images.push(q)
+                    } else {
+                        var num = classes.indexOf(objs[j].cls)
+                        images[num].push(arr[i].imgName)
+                    }
+                }
+            }
+            document.getElementById('pic').src = "file:\\" + (images[0])[curNum]
+            document.getElementById('par').innerHTML = "Picture 1 of " + images[0].length
+            list.onchange = function () {
+                curNum = 0
+                document.getElementById('pic').src = "file:\\" + (images[list.selectedIndex])[curNum]
+                document.getElementById('par').innerHTML = "Picture 1 of " + images[list.selectedIndex].length
+            }
+            document.getElementById('getNext').onclick = function () {
+                var ind = list.selectedIndex
+                curNum = curNum + 1
+                if (curNum >= images[ind].length) {
+                    curNum = 0;
+                }
+                document.getElementById('par').innerHTML = "Picture " + (curNum + 1) + " of " + images[ind].length
+                document.getElementById('pic').src = "file:\\" + (images[list.selectedIndex])[curNum]
+            }
+            document.getElementById('getPrev').onclick = function () {
+                var ind = list.selectedIndex
+                curNum = curNum - 1
+                if (curNum < 0) {
+                    curNum = images[ind].length - 1;
+                }
+                document.getElementById('par').innerHTML = "Picture " + (curNum + 1) + " of " + images[ind].length
+                document.getElementById('pic').src = "file:\\" + (images[list.selectedIndex])[curNum]
+            }
+        }
+        t.send()
+    </script>
+</body>
+</html>
